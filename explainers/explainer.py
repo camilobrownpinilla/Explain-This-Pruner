@@ -3,6 +3,7 @@ import shap
 import lime
 from transformers.modeling_utils import PreTrainedModel
 from torch.nn.functional import softmax
+from transformers import pipeline
 
 class Explainer():
     """Wrapper around model allowing for quick explanations"""
@@ -29,8 +30,14 @@ class Explainer():
                              Choose one of {recognized_methods}''')
         
         if method == "shap":
+            # Necessary to use shap
+            self.model = pipeline('text-classification',
+                                   model=self.model, 
+                                   device=0,
+                                   tokenizer=self.tokenizer,
+                                   top_k=None) 
             explainer = shap.Explainer(self.model)
-            shap_values = explainer(input)
+            shap_values = explainer([input])
             return shap_values
         
         if method == "lime":
