@@ -1,63 +1,31 @@
-import lime.lime_text
-import shap
-import lime
-from transformers.modeling_utils import PreTrainedModel
-from torch.nn.functional import softmax
-from transformers import pipeline
+"""
+    Abstract Explainer base class
+    Defines abstract methods that must be implemented
+    by children classes (e.g. SHAP, LIME)
+"""
 
-class Explainer():
-    """Wrapper around model allowing for quick explanations"""
+from transformers.modeling_utils import PreTrainedModel
+from abc import ABC, abstractmethod
+
+
+class Explainer(ABC):
+    """Wrapper around model for explaining outputs"""
+
     def __init__(self, model, tokenizer):
-        assert isinstance(model, PreTrainedModel),\
+        assert isinstance(model, PreTrainedModel), \
             "Currently only HF transformers are supported"
         self.model = model
         self.tokenizer = tokenizer
 
-    def explain(self, method: str, input):
+    @abstractmethod
+    def explain(self, input: str):
         """
-        Method to explain model's prediction of 'input'
-
-        params: 
-            method (str): Explanation method to use
-            input (any): input to be explained
-
-        returns:
-            explanation
-        """
-        recognized_methods = ["shap", "lime"]
-        if method not in recognized_methods:
-            raise ValueError(f'''Unrecognized method {method}. 
-                             Choose one of {recognized_methods}''')
-        
-        if method == "shap":
-            # Necessary to use shap
-            self.model = pipeline('text-classification',
-                                   model=self.model, 
-                                   device=0,
-                                   tokenizer=self.tokenizer,
-                                   top_k=None) 
-            explainer = shap.Explainer(self.model)
-            shap_values = explainer([input])
-            return shap_values
-        
-        if method == "lime":
-            labels = self.model.config.label2id.keys()
-            explainer = lime.lime_text.LimeTextExplainer(class_names=labels)
-            exp = explainer.explain_instance(input, self.predict_proba)
-            return exp.as_list()
-    
-    def predict_proba(self, texts):
-        """
-        Prediction function for LIME explainer
+        Explains model's output for `input`
 
         params:
-            texts (list of str): List of input texts
+            input (str): input to be passed to model
 
         returns:
-            predictions (numpy.ndarray): Array of prediction probabilities
+            explanation of model's output
         """
-        inputs = self.tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
-        outputs = self.model(**inputs)
-        probabilities = softmax(outputs.logits, dim=-1).detach().numpy()
-        return probabilities
-
+        pass

@@ -1,5 +1,5 @@
 from transformers import AutoTokenizer, BertForSequenceClassification
-from explainers.explainer import Explainer
+from explainers.explanation_methods import LIME
 
 
 tokenizer = AutoTokenizer.from_pretrained(
@@ -11,6 +11,6 @@ print('model loaded')
 input = 'Hello, my dog is cute'
 tokenized_inputs = tokenizer(input)
 
-explainer = Explainer(model, tokenizer)
-explanation = explainer.explain('lime', input)
+explainer = LIME(model, tokenizer)
+explanation = explainer.explain(input)
 print('LIME explanation: ', explanation)

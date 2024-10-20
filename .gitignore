@@ -1,4 +1,5 @@
 .python-version
+leaf/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
