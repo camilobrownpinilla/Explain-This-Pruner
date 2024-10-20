@@ -10,11 +10,14 @@ from torch.nn.functional import softmax
 from transformers import pipeline
 
 from explainers.explainer import Explainer
+from utils.utils import get_device
 
 
 class SHAP(Explainer):
-    def __init__(self, model, tokenizer):
-        super().__init__(model, tokenizer)
+    def __init__(self, model, tokenizer, device=None):
+        if not device:
+            device = get_device()
+        super().__init__(model, tokenizer, device)
         self.explainer = pipeline('text-classification',
                                   model=self.model,
                                   device=0,
@@ -23,14 +26,16 @@ class SHAP(Explainer):
 
     def explain(self, input):
         explainer = shap.Explainer(self.explainer)
-        shap_values = explainer([input])
+        shap_values = explainer([input]).values
 
         return shap_values[0]
 
 
 class LIME(Explainer):
-    def __init__(self, model, tokenizer):
-        super().__init__(model, tokenizer)
+    def __init__(self, model, tokenizer, device=None):
+        if not device:
+            device = get_device()
+        super().__init__(model, tokenizer, device)
         labels = self.model.config.label2id.keys()
         self.explainer = lime.lime_text.LimeTextExplainer(class_names=labels)
 

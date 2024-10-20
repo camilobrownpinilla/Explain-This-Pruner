@@ -11,11 +11,12 @@ from abc import ABC, abstractmethod
 class Explainer(ABC):
     """Wrapper around model for explaining outputs"""
 
-    def __init__(self, model, tokenizer):
+    def __init__(self, model, tokenizer, device):
         assert isinstance(model, PreTrainedModel), \
             "Currently only HF transformers are supported"
         self.model = model
         self.tokenizer = tokenizer
+        self.device = device
 
     @abstractmethod
     def explain(self, input: str):
