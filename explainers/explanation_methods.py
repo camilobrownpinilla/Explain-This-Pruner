@@ -15,22 +15,24 @@ from explainers.explainer import Explainer
 class SHAP(Explainer):
     def __init__(self, model, tokenizer):
         super().__init__(model, tokenizer)
+        self.explainer = pipeline('text-classification',
+                                  model=self.model,
+                                  device=0,
+                                  tokenizer=self.tokenizer,
+                                  top_k=None)
 
     def explain(self, input):
-        self.model = pipeline('text-classification',
-                              model=self.model,
-                              device=0,
-                              tokenizer=self.tokenizer,
-                              top_k=None)
-        explainer = shap.Explainer(self.model)
+        explainer = shap.Explainer(self.explainer)
         shap_values = explainer([input])
 
-        return shap_values
+        return shap_values[0]
 
 
 class LIME(Explainer):
     def __init__(self, model, tokenizer):
         super().__init__(model, tokenizer)
+        labels = self.model.config.label2id.keys()
+        self.explainer = lime.lime_text.LimeTextExplainer(class_names=labels)
 
     def predict_proba(self, texts):
         """
@@ -50,8 +52,5 @@ class LIME(Explainer):
         return probabilities
 
     def explain(self, input):
-        labels = self.model.config.label2id.keys()
-        explainer = lime.lime_text.LimeTextExplainer(class_names=labels)
-        exp = explainer.explain_instance(input, self.predict_proba)
-
+        exp = self.explainer.explain_instance(input, self.predict_proba)
         return exp.as_list()
