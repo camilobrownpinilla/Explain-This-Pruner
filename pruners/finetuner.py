@@ -3,7 +3,8 @@
     Should we therefore use a range of different approaches?
 """
 
-from transformers import BertTokenizer, Trainer, TrainingArguments
+from datasets import load_dataset
+from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
 
 
 # Fine-tune the pruned BERT model
