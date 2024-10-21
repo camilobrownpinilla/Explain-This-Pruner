@@ -7,8 +7,6 @@ from datasets import load_dataset
 from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
 
 
-
-
 # Fine-tune the pruned BERT model
 def Bert_fine_tuner(model):
     # Load the Yelp polarity dataset
@@ -16,18 +14,18 @@ def Bert_fine_tuner(model):
     # Load the pre-trained BERT tokenizer
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
     # tokenizer method for encoding the dataset
+
     def Bert_tokenize_function(examples):
         return tokenizer(examples["text"], padding="max_length", truncation=True)
-    
+
     encoded_dataset = dataset.map(Bert_tokenize_function, batched=True)
 
-    
     # Define the TrainingArguments
     training_args = TrainingArguments(
         output_dir="./results",           # Directory to save checkpoints
         eval_strategy="epoch",            # Evaluate at the end of each epoch
         learning_rate=2e-5,               # Learning rate
-        per_device_train_batch_size=16,   # Batch size for training          
+        per_device_train_batch_size=16,   # Batch size for training
         per_device_eval_batch_size=16,    # Batch size for evaluation
         num_train_epochs=3,               # Number of training epochs
         weight_decay=0.01,                # Weight decay for regularization
@@ -38,12 +36,13 @@ def Bert_fine_tuner(model):
         save_strategy="epoch",            # Save a checkpoint at the end of each epoch
     )
 
-    #Define the Trainer
+    # Define the Trainer
     trainer = Trainer(
         model=model,                      # The BERT model
         args=training_args,               # Training arguments
         train_dataset=encoded_dataset,    # Training dataset
-        eval_dataset=encoded_dataset,     # Evaluation dataset (can be separate)
+        # Evaluation dataset (can be separate)
+        eval_dataset=encoded_dataset,
     )
 
     # fine-tune the model

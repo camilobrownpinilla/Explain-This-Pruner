@@ -1,4 +1,4 @@
-
+# Prints sparsity of each model layer and the overall model sparsity
 def test_sparsity(paras_to_prune):
     total_paras = 0
     zero_paras = 0
@@ -19,6 +19,3 @@ def test_sparsity(paras_to_prune):
 
     total_sparsity = zero_paras / total_paras
     print(f"\nOverall model sparsity: {total_sparsity:.2%}")
-
-
-        
