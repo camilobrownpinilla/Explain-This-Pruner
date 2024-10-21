@@ -1,7 +1,7 @@
 from transformers import BertForSequenceClassification
 from pruning_methods import Pruner, PruningMethod
-from Pruner_Test_Suite import *
-from Fine_Tuning import *
+from pruners.test_suite import *
+from pruners.finetuner import *
 
 # Load pre-trained BERT model
 model = BertForSequenceClassification.from_pretrained(
@@ -19,10 +19,10 @@ for layer in model.bert.encoder.layer:
     paras_to_prune.append((layer.attention.self.key, 'weight'))
     paras_to_prune.append((layer.attention.self.value, 'weight'))
     paras_to_prune.append((layer.attention.output.dense, 'weight'))
-    
+
     # Intermediate dense layer
     paras_to_prune.append((layer.intermediate.dense, 'weight'))
-    
+
     # Output dense layer
     paras_to_prune.append((layer.output.dense, 'weight'))
 
@@ -30,9 +30,12 @@ for layer in model.bert.encoder.layer:
 # Initialize Pruner instance
 Bert_pruner = Pruner(model)
 # Initialize PruningMethod instances
-randomly_prune_Bert = PruningMethod(type = "RandomUnstructured", paras_to_prune = paras_to_prune, percentage = 0.1, mask = None)
-L1_prune_Bert = PruningMethod(type = "L1Unstructured", paras_to_prune = paras_to_prune, percentage = 0.9, mask = None)
-custom_prune_Bert = PruningMethod(type = "Custom", paras_to_prune = paras_to_prune, percentage = None, mask = [])
+randomly_prune_Bert = PruningMethod(
+    type="RandomUnstructured", paras_to_prune=paras_to_prune, percentage=0.1, mask=None)
+L1_prune_Bert = PruningMethod(
+    type="L1Unstructured", paras_to_prune=paras_to_prune, percentage=0.9, mask=None)
+custom_prune_Bert = PruningMethod(
+    type="Custom", paras_to_prune=paras_to_prune, percentage=None, mask=[])
 
 # Prune the model
 Bert_pruner.prune(L1_prune_Bert)
@@ -41,7 +44,3 @@ Bert_pruner.prune(L1_prune_Bert)
 test_sparsity(paras_to_prune)
 
 Bert_fine_tuner(model)
-
-
-
-
