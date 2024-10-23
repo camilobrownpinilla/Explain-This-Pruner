@@ -5,15 +5,15 @@
 import torch.nn.utils.prune as prune
 import torch
 
-from pruner import Pruner
+from pruners.pruner import Pruner
 
 
 class RandUnstructured(Pruner):
-    def __init__(self, model):
-        super().__init__(model)
+    def __init__(self, model, params, ptg):  
+        super().__init__(model, params, ptg)
         self.method = prune.RandomUnstructured
 
-    def __call__(self):
+    def __call__(self):    
         # Randomly prunes `ptg` percentage of `params`
         prune.global_unstructured(
             self.params, pruning_method=self.method, amount=self.ptg)
@@ -21,8 +21,8 @@ class RandUnstructured(Pruner):
 
 
 class L1Unstructured(Pruner):
-    def __init__(self, model):
-        super().__init__(model)
+    def __init__(self, model, params, ptg):
+        super().__init__(model, params, ptg)
         self.method = prune.L1Unstructured
 
     def __call__(self):
@@ -33,8 +33,8 @@ class L1Unstructured(Pruner):
 
 
 class CustomMask(Pruner):
-    def __init__(self, model, mask: torch.Tensor):
-        super().__init__(model)
+    def __init__(self, model, params, ptg, mask: torch.Tensor):
+        super().__init__(model, params, ptg)
         self.mask = mask
 
     def __call__(self):
