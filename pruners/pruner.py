@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 
 
 class Pruner(ABC):
-    """Wrapper around model for pruning its parameters"""
+    """Base class from which subclasses implement pruning methods"""
 
     def __init__(self, model, params, ptg):
         """
