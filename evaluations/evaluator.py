@@ -13,9 +13,7 @@ class Evaluator():
     """
 
     # TODO Discuss what would make sense. maybe init with eval metric?
-    def __init__(self, explainer):
-        assert isinstance(explainer, Explainer), \
-            "explanation method must implement the Explainer abstract class"
+    def __init__(self, explainer: Explainer):
         self.model = explainer.model   # the 'black box' being explained
         self.tokenizer = explainer.tokenizer
         self.explainer = explainer  # explanation method to evaluate
