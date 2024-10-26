@@ -11,23 +11,21 @@ from abc import ABC, abstractmethod
 class Pruner(ABC):
     """Base class from which subclasses implement pruning methods"""
 
-    def __init__(self, model, params, ptg):
-        """
-        Args:
-            model: model to prune
-            params: model parameters to prune
-            ptg (float): percentage of params to be pruned
-        """
-        self.model = model
-        self.params = params
-        self.ptg = ptg
+    def __init__(self):
+        pass
 
     # Applies pruning mask to the model
     @abstractmethod
-    def __call__(self):
+    def prune(self, params, ptg):
+        """
+        Args:
+            params: model parameters to prune
+            ptg (float): percentage of params to be pruned
+        """
         pass
 
     # Removes the parameters with pruning mask
-    def remove(self):
-        for (module, name) in self.params:
+    def remove(self, params):
+        # params: model parameters to prune
+        for (module, name) in params:
             prune.remove(module, name)
