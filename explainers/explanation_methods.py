@@ -20,7 +20,7 @@ class SHAP(Explainer):
         super().__init__(model, tokenizer, device)
         self.explainer = pipeline('text-classification',
                                   model=self.model,
-                                  device=0,
+                                  device=device,
                                   tokenizer=self.tokenizer,
                                   top_k=None)
 
