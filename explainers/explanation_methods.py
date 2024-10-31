@@ -60,8 +60,10 @@ class LIME(Explainer):
 
     def explain(self, input):
         exp = self.explainer.explain_instance(input, self.predict_proba)
+
         return exp.as_list()
-    
+
+
 class IG(Explainer):
     def __init__(self, model, tokenizer, device=None):
         if not device:
@@ -69,18 +71,22 @@ class IG(Explainer):
         super().__init__(model, tokenizer, device)
 
     def explain(self, input):
-        input = self.tokenizer(input, return_tensors='pt', padding=True, truncation=True)
-        pred_label_idx = torch.argmax(self.model(**input).logits, dim=-1).item()
-        ig, _ = self.integrated_gradients(input, pred_label_idx, self.predictions_and_gradients)
+        input = self.tokenizer(input, return_tensors='pt',
+                               padding=True, truncation=True)
+        pred_label_idx = torch.argmax(
+            self.model(**input).logits, dim=-1).item()
+        ig, _ = self.integrated_gradients(
+            input, pred_label_idx, self.predictions_and_gradients)
 
         return ig.tolist()
 
     def predictions_and_gradients(self, input, target_label_idx):
-        # Don't update model params 
+        # Don't update model params
         self.model.eval()
 
         # Must compute gradients w.r.t embeddings for discrete token input
-        embeddings = self.model.get_input_embeddings()(input['input_ids']) # : [Bs, input_ids, emb]
+        embeddings = self.model.get_input_embeddings()(
+            input['input_ids'])  # : [Bs, input_ids, emb]
         embeddings = embeddings.detach().requires_grad_()
         logits = self.model(inputs_embeds=embeddings).logits
 
@@ -94,28 +100,28 @@ class IG(Explainer):
         return predictions, gradients
 
     def integrated_gradients(
-                            self,
-                            inp, 
-                            target_label_index,
-                            predictions_and_gradients,
-                            baseline=None,
-                            steps=50):
+            self,
+            inp,
+            target_label_index,
+            predictions_and_gradients,
+            baseline=None,
+            steps=50):
         """
         adapted from: 
         https://github.com/ankurtaly/Integrated-Gradients/blob/master/IntegratedGradients/integrated_gradients.py
 
         Computes integrated gradients for a given network and prediction label.
-        
+
         This method only applies to classification networks, i.e., networks 
         that predict a probability distribution across two or more class labels.
-        
+
         Access to the specific network is provided to the method via a
         'predictions_and_gradients' function provided as argument to this method.
         The function takes a batch of inputs and a label, and returns the
         predicted probabilities of the label for the provided inputs, along with
         gradients of the prediction with respect to the input. Such a function
         should be easy to create in most deep learning frameworks.
-        
+
         Args:
             inp: The specific input for which integrated gradients must be computed.
             target_label_index: Index of the target class for which integrated gradients
@@ -148,7 +154,7 @@ class IG(Explainer):
             integrated_gradients: The integrated_gradients of the prediction for the
             provided prediction label to the input. It has the same shape as that of
             the input.
-            
+
             The following output is meant to provide debug information for sanity
             checking the integrated gradients computation.
             See also: sanity_check_integrated_gradients
@@ -158,7 +164,7 @@ class IG(Explainer):
             It has shape <steps, num_classes> where 'steps' is the number of integrated
             gradient steps and 'num_classes' is the number of target classes for the
             model.
-        """  
+        """
         if baseline is None:
             baseline = deepcopy(inp)
             baseline['input_ids'] = torch.zeros_like(baseline['input_ids'])
@@ -167,11 +173,14 @@ class IG(Explainer):
         scaled_inputs = []
         scaled_input = deepcopy(inp)
         for i in range(0, steps+1):
-            tmp = (baseline['input_ids'] + (float(i)/steps) * (inp['input_ids']- baseline['input_ids'])).int()
+            tmp = (baseline['input_ids'] + (float(i)/steps) *
+                   (inp['input_ids'] - baseline['input_ids'])).int()
             scaled_inputs.append(tmp)
-        scaled_input['input_ids'] = torch.stack(scaled_inputs, dim=0).squeeze(1)
-        predictions, grads = predictions_and_gradients(scaled_input, target_label_index)  # shapes: <steps+1>, <steps+1, inp.shape>
-        
+        scaled_input['input_ids'] = torch.stack(
+            scaled_inputs, dim=0).squeeze(1)
+        predictions, grads = predictions_and_gradients(
+            scaled_input, target_label_index)  # shapes: <steps+1>, <steps+1, inp.shape>
+
         # Use trapezoidal rule to approximate the integral.
         # See Section 4 of the following paper for an accuracy comparison between
         # left, right, and trapezoidal IG approximations:
@@ -179,7 +188,10 @@ class IG(Explainer):
         # https://arxiv.org/abs/1908.06214
         grads = (grads[:-1] + grads[1:]) / 2.0
         avg_grads = np.average(grads, axis=0)
-        integrated_gradients = (inp['input_ids']-baseline['input_ids'])*avg_grads  # shape: <inp.shape>
+        integrated_gradients = (
+            # shape: <inp.shape>
+            inp['input_ids']-baseline['input_ids'])*avg_grads
+
         return integrated_gradients, predictions
 
 
@@ -194,7 +206,9 @@ if __name__ == "__main__":
     id2label = model.config.id2label
     ig_explainer = IG(model, tokenizer, device)
     input = 'I seriously LOVE this great movie. This part has nothing to do with how I feel.'
-    output = model(**(tokenizer(input, return_tensors='pt', padding=True, truncation=True)))
+    output = model(
+        **(tokenizer(input, return_tensors='pt', padding=True, truncation=True)))
     print(output)
-    out_class = id2label[torch.argmax(torch.softmax(output.logits, dim=-1), dim=-1).item()]
+    out_class = id2label[torch.argmax(
+        torch.softmax(output.logits, dim=-1), dim=-1).item()]
     print(f"Prediction:{out_class}\nExplanation:{ig_explainer.explain(input)}")

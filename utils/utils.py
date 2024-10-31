@@ -9,7 +9,8 @@ def get_device():
         return torch.device("cuda")
     else:
         return torch.device("cpu")
-    
+
+
 def get_params_to_prune(model):
     """Returns all non-embedding parameters of a PyTorch model for pruning.
 
@@ -24,4 +25,5 @@ def get_params_to_prune(model):
         if not isinstance(module, nn.Embedding):  # Skip embedding layers
             if hasattr(module, 'weight'):  # Ensure it has a weight parameter
                 model_params.append((module, 'weight'))
+
     return model_params
