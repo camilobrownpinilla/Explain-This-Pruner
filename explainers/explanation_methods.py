@@ -78,7 +78,7 @@ class IG(Explainer):
         ig, _ = self.integrated_gradients(
             input, pred_label_idx, self.predictions_and_gradients)
 
-        return ig.tolist()
+        return ig.tolist()[0]
 
     def predictions_and_gradients(self, input, target_label_idx):
         # Don't update model params

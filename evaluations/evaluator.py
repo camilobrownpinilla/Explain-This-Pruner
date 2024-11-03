@@ -11,6 +11,7 @@ class Evaluator():
     """
     Wrapper for evaluation of explanations
     """
+    MASK = 103  # [MASK] token maps to 103
 
     # TODO Discuss what would make sense. maybe init with eval metric?
     def __init__(self, explainer: Explainer):
@@ -50,7 +51,7 @@ class Evaluator():
 
         # perturb input by replacing top feature with PAD token `0`
         tokens = tokenized_input["input_ids"]
-        tokens[0, top_feature_id] = 0
+        tokens[0, top_feature_id] = self.MASK
         tokenized_input["input_ids"] = tokens
 
         # get output of model on perturbed input
@@ -76,10 +77,26 @@ class Evaluator():
             # `explanation` is a list [(token, importance),...]
             # negative feature importance -> feature contributes to label 0
             # positive feature importance -> feature contributes to label 1
-            compare = min() if predicted_class_id == 0 else max()
-            top_feature_id = compare(
-                enumerate(explanation), key=lambda i: i[1][1])[0]
+            if predicted_class_id == 0:
+                top_feature_id = min(
+                    enumerate(explanation), key=lambda i: i[1][1])[0]
+            else:
+                top_feature_id = max(
+                    enumerate(explanation), key=lambda i: i[1][1])[0]
             top_feature = explanation[top_feature_id][1]
+        elif method == 'IG':
+            # `explanation` is a list [importance, ...]
+            if predicted_class_id == 0:
+                top_feature_id = min(
+                    enumerate(explanation), key=lambda i: i[1])[0]
+                top_feature = explanation[top_feature_id]
+                assert (top_feature == min(explanation))
+            else:
+                top_feature_id = max(
+                    enumerate(explanation), key=lambda i: i[1])[0]
+                top_feature = explanation[top_feature_id]
+                assert (top_feature == max(explanation))
+
         else:
             raise ValueError(f'Explanation method {method} not supported')
 
