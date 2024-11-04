@@ -27,3 +27,14 @@ def get_params_to_prune(model):
                 model_params.append((module, 'weight'))
 
     return model_params
+
+def reinitialize_weights(module):
+    """Reinitializes weights of a model"""
+    if hasattr(module, 'reset_parameters'):
+        module.reset_parameters()
+    else:
+        for param in module.parameters():
+            if param.dim() > 1:  # usually for weight matrices
+                torch.nn.init.xavier_uniform_(param)
+            else:  # usually for biases or 1D vectors
+                torch.nn.init.zeros_(param)
