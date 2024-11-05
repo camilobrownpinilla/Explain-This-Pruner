@@ -7,6 +7,7 @@ import torch
 
 from pruners.pruner import Pruner
 
+__all__ =  ['RandUnstructured',' L1Unstructured', 'CustomMask']
 
 class RandUnstructured(Pruner):
     def __init__(self):
