@@ -28,6 +28,7 @@ def get_params_to_prune(model):
 
     return model_params
 
+
 def reinitialize_weights(model):
     """Reinitializes weights of a model"""
     for _, module in model.named_modules():
