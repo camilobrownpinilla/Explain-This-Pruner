@@ -87,7 +87,7 @@ def eval_suite(model, tokenizer, inputs, prune_ptg, explainers):
 
                 # Append the result of get_local_infidelity to the list
                 infidelities[prune_method][expla_method].append(
-                    evaluator.get_local_infidelity(input, k=1))
+                    evaluator.get_local_infidelity_mask_top_k(input, k=1))
 
     return infidelities
 

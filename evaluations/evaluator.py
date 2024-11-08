@@ -20,10 +20,10 @@ class Evaluator():
         self.explainer = explainer  # explanation method to evaluate
         self.device = explainer.device
 
-    def evaluate_infidelity_mask_top_feats(self, test_set, k=1, num_samples=None):
+    def evaluate_infidelity_mask_top_k(self, test_set, k=1, num_samples=None):
         """
-        Returns the average local infidelity of the explanation method over `num_samples` inputs in `test_set`.
-        Computes local infidelity by masking top feature of an input sample.
+        Returns the average local infidelity of the explanation method over `num_samples` rand samples in `test_set`.
+        Computes local infidelity by masking top k features of an input sample.
 
         params:
             test_set: a `Dataset` object, e.g. obtained via `load_dataset("imdb")["test"]`
@@ -41,17 +41,18 @@ class Evaluator():
         shuffled_set = test_set.shuffle(seed=4)  # set seed for reproducibility
         infid = 0
         for sample in shuffled_set[:num_samples]:
-            infid += self.get_local_infidelity(sample["text"], k)
+            infid += self.get_local_infidelity_mask_top_k(sample["text"], k)
 
         return infid / num_samples
 
-    def get_local_infidelity(self, input, k):
+    def get_local_infidelity_mask_top_k(self, input, k):
         """
         Returns local infidelity of explanation method at input with respect to the model
+        Input is perturbed by masking top k features
 
         params: 
-            method: explanation method to evaluate
             input: input being explained
+            k: number of top features to mask
 
         returns:
             local infidelity
@@ -135,6 +136,19 @@ class Evaluator():
 
         return top_feature_ids, top_features
 
+    def get_local_infidelity_mask_pairs(self, input):
+        """
+        Returns local infidelity of explanation method at input with respect to the model
+        Input is perturbed by masking pairs of features, one pair at a time
+
+        params: 
+            input: input being explained
+
+        returns:
+            local infidelity
+        """
+        pass
+
 
 if __name__ == '__main__':
     tokenizer = AutoTokenizer.from_pretrained(
@@ -149,5 +163,5 @@ if __name__ == '__main__':
 
     explainer = SHAP(model, tokenizer, device)
     evaluator = Evaluator(explainer)
-    infidelity = evaluator.get_local_infidelity(input2, 1)
+    infidelity = evaluator.get_local_infidelity_mask_top_k(input2, 1)
     print(infidelity)
