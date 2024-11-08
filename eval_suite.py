@@ -87,7 +87,7 @@ def eval_suite(model, tokenizer, inputs, prune_ptg, explainers):
 
                 # Append the result of get_local_infidelity to the list
                 infidelities[prune_method][expla_method].append(
-                    evaluator.get_local_infidelity(input))
+                    evaluator.get_local_infidelity(input, k=1))
 
     return infidelities
 
@@ -107,13 +107,13 @@ inputs = ['Camilo CANNOT CODE FOR HIS LIFE. I DONT LIKE HIM!!!!',
           'Paula and Hiwot are great TFs!']
 
 
-explainers = [IG]
+explainers = [SHAP]
 infidelities = eval_suite(model, tokenizer, inputs, .20, explainers)
 
 
 print(infidelities)
 
-method = 'IG'
+method = 'SHAP'
 categories = ['unpruned', 'l1unstruct', 'randunstruct']
 vals1 = [infidelities[c][method][0] for c in categories]
 vals2 = [infidelities[c][method][3] for c in categories]
