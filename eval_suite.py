@@ -100,13 +100,13 @@ inputs = ['Camilo CANNOT CODE FOR HIS LIFE. I DONT LIKE HIM!!!!',
           'Paula and Hiwot are great TFs!']
 
 
-explainers = [SHAP, IG]
+explainers = [IG]
 infidelities = eval_suite(model, tokenizer, inputs, .20, explainers)
 
 
 print(infidelities)
 
-method = 'SHAP'
+method = 'IG'
 categories = ['unpruned', 'l1unstruct', 'randunstruct']
 vals1 = [infidelities[c][method][0] for c in categories]
 vals2 = [infidelities[c][method][3] for c in categories]

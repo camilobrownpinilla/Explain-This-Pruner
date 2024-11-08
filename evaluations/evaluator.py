@@ -20,11 +20,29 @@ class Evaluator():
         self.explainer = explainer  # explanation method to evaluate
         self.device = explainer.device
 
-    def evaluate(self, args):
+    def evaluate_infidelity_mask_top_feat(self, test_set, num_samples=None):
         """
-        Method to evaluate a pruning method.
+        Returns the average local infidelity of the explanation method over `num_samples` inputs in `test_set`.
+        Computes local infidelity by masking top feature of an input sample.
+
+        params:
+            test_set: a `Dataset` object, e.g. obtained via `load_dataset("imdb")["test"]`
+            num_samples: number of test samples to evaluate on
+
+        returns:
+            average infidelity
         """
-        pass
+        # evaluate on full test set by default
+        if num_samples is None:
+            num_samples = len(test_set)
+
+        # shuffle test set for random sampling
+        shuffled_set = test_set.shuffle(seed=4)  # set seed for reproducibility
+        infid = 0
+        for sample in shuffled_set[:num_samples]:
+            infid += self.get_local_infidelity(sample["text"])
+
+        return infid / num_samples
 
     def get_local_infidelity(self, input):
         """
