@@ -1,0 +1,3 @@
+[submodule "external/sparseml"]
+	path = external/sparseml
+	url = https://github.com/neuralmagic/sparseml.git
