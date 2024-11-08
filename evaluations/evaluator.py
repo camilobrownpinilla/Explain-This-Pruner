@@ -3,7 +3,7 @@ import torch
 from explainers.explainer import Explainer
 
 from transformers import AutoTokenizer, BertForSequenceClassification
-from explainers.explanation_methods import SHAP
+from explainers.explanation_methods import SHAP, IG
 from utils.utils import get_device
 
 
@@ -49,7 +49,7 @@ class Evaluator():
         top_feature_id, top_feature = self.get_top_feature(
             explanation, type(self.explainer).__name__, predicted_class_id)
 
-        # perturb input by replacing top feature with PAD token `0`
+        # perturb input by replacing top feature with MASK token `103`
         tokens = tokenized_input["input_ids"]
         tokens[0, top_feature_id] = self.MASK
         tokenized_input["input_ids"] = tokens
@@ -85,18 +85,11 @@ class Evaluator():
                     enumerate(explanation), key=lambda i: i[1][1])[0]
             top_feature = explanation[top_feature_id][1]
         elif method == 'IG':
-            # `explanation` is a list [importance, ...]
-            if predicted_class_id == 0:
-                top_feature_id = min(
-                    enumerate(explanation), key=lambda i: i[1])[0]
-                top_feature = explanation[top_feature_id]
-                assert (top_feature == min(explanation))
-            else:
-                top_feature_id = max(
-                    enumerate(explanation), key=lambda i: i[1])[0]
-                top_feature = explanation[top_feature_id]
-                assert (top_feature == max(explanation))
-
+            # `explanation` is a list of feature importance scores w.r.t. model prediction
+            top_feature_id = max(
+                enumerate(explanation), key=lambda i: i[1])[0]
+            top_feature = explanation[top_feature_id]
+            assert (top_feature == max(explanation))
         else:
             raise ValueError(f'Explanation method {method} not supported')
 
@@ -108,12 +101,13 @@ if __name__ == '__main__':
         "textattack/bert-base-uncased-yelp-polarity")
     model = BertForSequenceClassification.from_pretrained(
         "textattack/bert-base-uncased-yelp-polarity")
-    device = get_device()
+    device = torch.device('cpu')
     model = model.to(device)
 
-    input = 'Hello, my dog is so terribly ugly'
+    input1 = 'Hello, my dog is so terribly ugly'
+    input2 = 'I am very happy about this restaurant.'
 
     explainer = SHAP(model, tokenizer, device)
     evaluator = Evaluator(explainer)
-    infidelity = evaluator.get_local_infidelity(input)
+    infidelity = evaluator.get_local_infidelity(input2)
     print(infidelity)
