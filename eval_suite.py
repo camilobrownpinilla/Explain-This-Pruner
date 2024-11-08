@@ -1,3 +1,10 @@
+"""
+Evaluates local infidelity of SHAP, LIME, and/or IG explanations of 
+BertForSequenceClassification (pretrained on Yelp polarity) on 6 sample inputs
+Visualizes results in bar chart for differently pruned versions of the model
+Pruned model accuracy has NOT been evaluated, and pruned models are not fine-tuned in this script
+"""
+
 import matplotlib.pyplot as plt
 from pruners.pruning_methods import L1Unstructured, RandUnstructured
 import torch
