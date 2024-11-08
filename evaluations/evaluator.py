@@ -98,6 +98,10 @@ class Evaluator():
             top_feature_ids: list of indices of top k features
             top_features: list of top k feature importances
         """
+        if k >= len(explanation) or k < 1:
+            raise ValueError(
+                'k must be at least 1 and no greater than the number of features')
+
         if method == 'SHAP':
             # `explanation` is a 2d array with elts:
             # [contribution to label 0, contribution to label 1]
