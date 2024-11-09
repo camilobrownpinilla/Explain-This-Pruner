@@ -80,6 +80,11 @@ def load_latest_checkpoints(path):
     """
     models = {}
     arch = None
+    
+    # Check if the path exists and is a directory
+    if not os.path.isdir(path):
+        raise FileNotFoundError(f"The directory '{path}' does not exist or is not a directory.")
+        
     # Iterate over each subdirectory in path
     for model_dir in os.listdir(path):
         model_path = os.path.join(path, model_dir)
