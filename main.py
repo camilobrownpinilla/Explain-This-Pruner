@@ -19,3 +19,18 @@
 # visualize results
 # one bar chart per explainer:
 #     display infidelity score of that explainer on each model
+
+
+from explainers.explainer import Explainer
+from explainers.explanation_methods import SHAP
+from evaluations.evaluator import Evaluator
+
+# model
+# tokenizer
+# test_set
+# device
+
+explainer = SHAP(model, tokenizer, device)
+evaluator = Evaluator(explainer)
+
+infid = evaluator.evaluate_infidelity_mask_top_k(test_set, k=1, ptg=0.05)
