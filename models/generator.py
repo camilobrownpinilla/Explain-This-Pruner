@@ -29,7 +29,7 @@ def generate(model, tokenizer, dataset, pruning_methods, prune_ptg,
     os.environ["TOKENIZERS_PARALLELISM"] = "false" # Avoid forking
 
     # Prepare data
-    dataset.dataset.map(dataset.encode(tokenizer))
+    dataset.dataset = dataset.dataset.map(dataset.encode(tokenizer))
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
     # Reset model to random inits
@@ -48,8 +48,8 @@ def generate(model, tokenizer, dataset, pruning_methods, prune_ptg,
                                    fp16=True)
     base_trainer = Trainer(base_model, 
                            train_args,
-                           train_dataset=dataset.train,
-                           eval_dataset=dataset.test,
+                           train_dataset=dataset.train(),
+                           eval_dataset=dataset.test(),
                            data_collator=data_collator,
                            tokenizer=tokenizer,
                            compute_metrics=_compute_accuracy)
@@ -78,8 +78,8 @@ def generate(model, tokenizer, dataset, pruning_methods, prune_ptg,
                                    fp16=True)
     smaller_trainer = Trainer(smaller_model, 
                            train_args,
-                           train_dataset=dataset.train,
-                           eval_dataset=dataset.test,
+                           train_dataset=dataset.train(),
+                           eval_dataset=dataset.test(),
                            data_collator=data_collator,
                            tokenizer=tokenizer,
                            compute_metrics=_compute_accuracy)
@@ -108,8 +108,8 @@ def generate(model, tokenizer, dataset, pruning_methods, prune_ptg,
                                        fp16=True)
         prune_trainer = Trainer(pruned_model, 
                                 train_args,
-                                train_dataset=dataset.train,
-                                eval_dataset=dataset.test,
+                                train_dataset=dataset.train(),
+                                eval_dataset=dataset.test(),
                                 data_collator=data_collator,
                                 tokenizer=tokenizer,
                                 compute_metrics=_compute_accuracy)
