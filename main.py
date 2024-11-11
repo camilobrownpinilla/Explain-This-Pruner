@@ -2,10 +2,11 @@ import os
 import torch
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from transformers import AutoModelForSequenceClassification
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from explainers.explanation_methods import SHAP, LIME, IG
 from evaluations.evaluator import Evaluator
+from data.standard_datasets import IMDB, Emotion, YelpPolarity
 
 
 def eval_models(path, tokenizer, explainers, test_set, device, ptg=0.05):
@@ -50,16 +51,17 @@ def eval_models(path, tokenizer, explainers, test_set, device, ptg=0.05):
         plt.title(f'Infidelity of {exp} Explanations for Differently Pruned Versions of {arch}')
         
         # Save bar chart
-        save_path = f'results/figs/{exp}_topk_{arch}'
-        ext = '.png'
+        model_id = os.path.relpath(path, start='./')
+        save_path = f'results/figs/{model_id}/'
+        ext = f'{exp}_topk.png'
 
         # Ensure unique filename
         file_path = save_path + ext
         counter = 1
-        while os.path.exists(file_path):
-            file_path = f'{save_path}_{counter}{ext}'
-            counter += 1
-
+        # while os.path.exists(file_path):
+        #     file_path = f'{save_path}_{counter}{ext}'
+        #     counter += 1
+        os.makedirs(save_path, exist_ok=True)
         plt.savefig(file_path, format='png', dpi=300)
         print(f"Chart saved to {file_path}")
 
@@ -91,33 +93,29 @@ def load_latest_checkpoints(path):
 
         # Check if it's a directory
         if os.path.isdir(model_path):
-            # List all checkpoint files in the subdirectory
-            checkpoints = sorted(
-                [os.path.join(model_path, checkpoint)
-                 for checkpoint in os.listdir(model_path)],
-                key=os.path.getmtime,
-                reverse=True  # Sort by modification time, newest first
-            )
-
-            # Load the latest checkpoint
-            if checkpoints:
-                latest_checkpoint = checkpoints[0]
-                model = AutoModelForSequenceClassification.from_pretrained(
-                    latest_checkpoint)
+            # Load the model from the directory
+            try:
+                model = AutoModelForSequenceClassification.from_pretrained(model_path)
                 models[model_dir] = model
-                print(f"Loaded {model_path}/{latest_checkpoint}")
+                print(f"Loaded model from {model_path}")
                 # Get name of model architecture
                 if not arch:
                     arch = model.__class__.__name__
+            except Exception as e:
+                print(f"Failed to load model from {model_path}: {e}")
 
     return models, arch
 
 
 if __name__ == '__main__':
-    path = './ckpts'
-    tokenizer = None # TODO
-    explainers = [SHAP]
-    test_set = None # TODO
+    top_path = './BERT_IMDB'
+    paths = [os.path.join(top_path, sub_path) for sub_path in os.listdir(top_path)]
+    tokenizer = tokenizer = AutoTokenizer.from_pretrained("distilbert/distilbert-base-uncased-finetuned-sst-2-english")
+ # TODO
+    explainers = [SHAP, IG]
+    dataset = IMDB()
+    test_set = dataset.test()
     device = torch.device('cpu')
     
-    eval_models(path, tokenizer, explainers, test_set, device)
+    for path in paths:
+        eval_models(path, tokenizer, explainers, test_set, device)
