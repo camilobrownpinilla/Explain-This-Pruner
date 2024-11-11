@@ -9,7 +9,7 @@ from pruners.pruning_methods import RandUnstructured, L1Unstructured, CustomMask
 from utils.utils import reinitialize_weights, get_params_to_prune
 
 
-def generate(model, tokenizer, data, encode_fn, pruning_methods, prune_ptg, 
+def generate(model, tokenizer, dataset, pruning_methods, prune_ptg, 
              save_dir='../ckpts/', train_epochs=1):
     """
     Given a model, tokenizer, data, and pruning method(s), generate, train, and 
@@ -19,9 +19,7 @@ def generate(model, tokenizer, data, encode_fn, pruning_methods, prune_ptg,
     Args:
         model (PreTrainedModel): Base Huggingface model. 
         tokenizer (PreTrainedTokenizer): Huggingface tokenizer.
-        data (str): Name of Huggingface dataset or path to local dataset loading 
-                    script
-        encode_fn: Function to encode dataset using tokenizer
+        data (StandardDataset): Initialized Dataset of type StandardDataset.
         pruning_methods (list[Pruner]): List of pruning methods to use.
         prune_ptg (float): Percentage to prune model
         save_dir (str, optional): Where to save models. Defaults to '../ckpts/'.
@@ -30,9 +28,8 @@ def generate(model, tokenizer, data, encode_fn, pruning_methods, prune_ptg,
     RESET = "\033[0m"
     os.environ["TOKENIZERS_PARALLELISM"] = "false" # Avoid forking
 
-    # Load data
-    raw_data = load_dataset(data)
-    tokenized_data = raw_data.map(encode_fn)
+    # Prepare data
+    dataset.dataset.map(dataset.encode(tokenizer))
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
     # Reset model to random inits
@@ -51,10 +48,10 @@ def generate(model, tokenizer, data, encode_fn, pruning_methods, prune_ptg,
                                    fp16=True)
     base_trainer = Trainer(base_model, 
                            train_args,
-                           train_dataset=tokenized_data['train'],
-                           eval_dataset=tokenized_data['test'],
+                           train_dataset=dataset.train,
+                           eval_dataset=dataset.test,
                            data_collator=data_collator,
-                           processing_class=tokenizer,
+                           tokenizer=tokenizer,
                            compute_metrics=_compute_accuracy)
     base_trainer.train()
     base_trainer.save_model(f'{save_dir}/base')
@@ -81,10 +78,10 @@ def generate(model, tokenizer, data, encode_fn, pruning_methods, prune_ptg,
                                    fp16=True)
     smaller_trainer = Trainer(smaller_model, 
                            train_args,
-                           train_dataset=tokenized_data['train'],
-                           eval_dataset=tokenized_data['test'],
+                           train_dataset=dataset.train,
+                           eval_dataset=dataset.test,
                            data_collator=data_collator,
-                           processing_class=tokenizer,
+                           tokenizer=tokenizer,
                            compute_metrics=_compute_accuracy)
     smaller_trainer.train()
     smaller_trainer.save_model(f'{save_dir}/smaller')
@@ -111,10 +108,10 @@ def generate(model, tokenizer, data, encode_fn, pruning_methods, prune_ptg,
                                        fp16=True)
         prune_trainer = Trainer(pruned_model, 
                                 train_args,
-                                train_dataset=tokenized_data['train'],
-                                eval_dataset=tokenized_data['test'],
+                                train_dataset=dataset.train,
+                                eval_dataset=dataset.test,
                                 data_collator=data_collator,
-                                processing_class=tokenizer,
+                                tokenizer=tokenizer,
                                 compute_metrics=_compute_accuracy)
         prune_trainer.train()
         prune_trainer.save_model(f'{save_dir}/{method_name}')
