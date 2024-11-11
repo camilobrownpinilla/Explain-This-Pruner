@@ -21,7 +21,7 @@ class Evaluator():
         self.device = explainer.device
         # explanation method used to produce `explanation`
         self.method = type(self.explainer).__name__
-        self.MASK = tokenizer.mask_token_id  # id of [MASK] token
+        self.MASK = self.tokenizer.mask_token_id  # id of [MASK] token
 
     def evaluate_infidelity_mask_top_k(self, test_set, k=1, ptg=0.2):
         """
@@ -42,7 +42,7 @@ class Evaluator():
         infid = 0
         num_samples = int(len(shuffled_set) * ptg)
         for sample in shuffled_set[:num_samples]:
-            infid += self.get_local_infidelity_mask_top_k(sample["text"], k)
+            infid += self.get_local_infidelity_mask_top_k(sample, k)
 
         return infid / num_samples
 
