@@ -6,7 +6,7 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from explainers.explanation_methods import SHAP, LIME, IG
 from evaluations.evaluator import Evaluator
-from data.standard_datasets import IMDB, Emotion, YelpPolarity
+from data.datasets import IMDB, Emotion, YelpPolarity
 
 
 def eval_models(path, tokenizer, explainers, test_set, device, ptg=0.05):
