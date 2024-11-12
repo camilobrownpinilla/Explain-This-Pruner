@@ -5,9 +5,15 @@ from transformers import PreTrainedTokenizer
 
 class StandardDataset(ABC):
     """Base class from which datasets will inherit. Standardizes splits and 
-       mapping
+       mapping.
     """
-
+    
+    def __init_subclass__(cls):
+        # ensure each child class defines a class var `x` specifying name of sample col in Dataset object
+        super().__init_subclass__()
+        if not hasattr(cls, 'x'):
+            raise AttributeError(f"{cls.__name__} must define a class variable 'x'")
+    
     @abstractmethod
     def train(self) -> Dataset:
         """

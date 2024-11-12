@@ -110,12 +110,10 @@ def load_latest_checkpoints(path):
 if __name__ == '__main__':
     top_path = './BERT_IMDB'
     paths = [os.path.join(top_path, sub_path) for sub_path in os.listdir(top_path)]
-    tokenizer = tokenizer = AutoTokenizer.from_pretrained("distilbert/distilbert-base-uncased-finetuned-sst-2-english")
- # TODO
+    tokenizer = AutoTokenizer.from_pretrained("distilbert/distilbert-base-uncased-finetuned-sst-2-english")
     explainers = [SHAP, IG]
     dataset = IMDB()
-    test_set = dataset.test()
     device = torch.device('cpu')
     
     for path in paths:
-        eval_models(path, tokenizer, explainers, test_set, device)
+        eval_models(path, tokenizer, explainers, dataset, device)

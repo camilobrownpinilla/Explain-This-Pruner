@@ -8,6 +8,8 @@ __all__ = ["IMDB", "YelpPolarity", "Emotion"]
 
 
 class IMDB(StandardDataset):
+    x = 'review'  # name of col containing text samples
+    
     def __init__(self):
         self.dataset = load_dataset("ajaykarthick/imdb-movie-reviews")
 
@@ -19,10 +21,12 @@ class IMDB(StandardDataset):
     
     @staticmethod
     def encode(tokenizer):
-        return lambda example: tokenizer(example['review'], truncation=True)
+        return lambda example: tokenizer(example[IMDB.x], truncation=True)
     
 
 class YelpPolarity(StandardDataset):
+    x = 'text'
+    
     def __init__(self):
         self.dataset = load_dataset("fancyzhx/yelp_polarity")
 
@@ -34,10 +38,12 @@ class YelpPolarity(StandardDataset):
     
     @staticmethod
     def encode(tokenizer):
-        return lambda example: tokenizer(example['text'], truncation=True)
+        return lambda example: tokenizer(example[YelpPolarity.x], truncation=True)
     
 
 class Emotion(StandardDataset):
+    x = 'text'
+    
     def __init__(self):
         self.dataset = load_dataset("dair-ai/emotion")
 
@@ -49,12 +55,11 @@ class Emotion(StandardDataset):
     
     @staticmethod
     def encode(tokenizer):
-        return lambda example: tokenizer(example['text'], truncation=True)
+        return lambda example: tokenizer(example[Emotion.x], truncation=True)
     
-
 
 if __name__ == '__main__':
     tokenizer = AutoTokenizer.from_pretrained('bert-base-cased')
-    imdb = YelpPolarity()
+    imdb = Emotion()
     train, test = imdb.train(), imdb.test()
     imdb.dataset.map(imdb.encode(tokenizer))

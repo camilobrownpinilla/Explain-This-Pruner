@@ -1,11 +1,9 @@
 import torch
 from itertools import combinations
 from transformers import AutoTokenizer, BertForSequenceClassification
-from copy import deepcopy
 
 from explainers.explainer import Explainer
-from explainers.explanation_methods import SHAP, IG
-from utils.utils import get_device
+from explainers.explanation_methods import SHAP, LIME, IG
 
 
 class Evaluator():
@@ -23,13 +21,13 @@ class Evaluator():
         self.method = type(self.explainer).__name__
         self.MASK = self.tokenizer.mask_token_id  # id of [MASK] token
 
-    def evaluate_infidelity_mask_top_k(self, test_set, k=1, ptg=0.2):
+    def evaluate_infidelity_mask_top_k(self, dataset, k=1, ptg=0.2):
         """
-        Returns the average local infidelity of the explanation method over `num_samples` rand samples in `test_set`.
+        Returns the average local infidelity of the explanation method over `num_samples` rand test samples in `dataset`.
         Computes local infidelity by masking top k features of an input sample.
 
         params:
-            test_set: a `Dataset` object, e.g. obtained via `load_dataset("imdb")["test"]`
+            dataset: a dataset from data.datasets
             k: number of top features to mask
             ptg: percentage of test set to evaluate on. default 20%
 
@@ -38,10 +36,12 @@ class Evaluator():
         """
 
         # shuffle test set for random sampling
+        test_set = dataset.test()
         shuffled_set = test_set.shuffle(seed=4)  # set seed for reproducibility
         infid = 0
         num_samples = int(len(shuffled_set) * ptg)
-        for sample in shuffled_set[:num_samples]:
+        print(f'evaluating infidelity on {num_samples} test samples')
+        for sample in shuffled_set[dataset.x][:num_samples]:
             infid += self.get_local_infidelity_mask_top_k(sample, k)
 
         return infid / num_samples
@@ -219,7 +219,7 @@ if __name__ == '__main__':
     input1 = 'Hello, my dog is so terribly ugly'
     input2 = 'I am very happy about this restaurant.'
 
-    explainer = SHAP(model, tokenizer, device)
+    explainer = IG(model, tokenizer, device)
     evaluator = Evaluator(explainer)
-    infidelity = evaluator.get_local_infidelity_mask_top_k(input2, 1)
+    infidelity = evaluator.get_local_infidelity_mask_top_k(input2, 3)
     print(infidelity)
