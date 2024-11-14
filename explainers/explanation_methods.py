@@ -25,10 +25,15 @@ class SHAP(Explainer):
                                   device=device,
                                   tokenizer=self.tokenizer,
                                   top_k=None)
+        self.max_length = self.model.config.max_position_embeddings
 
     def explain(self, input):
+        # Truncate the input to the maximum length
+        input = self.tokenizer(input, truncation=True, max_length=self.max_length, return_tensors='pt')
+        input_text = self.tokenizer.decode(input['input_ids'][0], skip_special_tokens=True)
+        
         explainer = shap.Explainer(self.explainer)
-        shap_values = explainer([input]).values
+        shap_values = explainer([input_text]).values
 
         return shap_values[0]
 
