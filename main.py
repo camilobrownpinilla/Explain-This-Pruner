@@ -9,7 +9,7 @@ from evaluations.evaluator import Evaluator
 from data.datasets import IMDB, Emotion, YelpPolarity
 
 
-def eval_models(path, tokenizer, explainers, test_set, device, ptg=0.05):
+def eval_models(path, tokenizer, explainers, test_set, device, ptg=0.05, k=1):
     """
     For each model in `path`, evaluates infidelity of each explainer on `test_set`.
     For each explainer, creates and saves a bar chart of infidelity scores for each model.
@@ -21,6 +21,7 @@ def eval_models(path, tokenizer, explainers, test_set, device, ptg=0.05):
         test_set: test set to evaluate explainability on
         device: device to evaluate models on
         ptg: percentage of test_set to evaluate on, default 5%
+        k: Number of features to mask when computing infidelity 
     """
     # Load in models contained in `path`
     print(f"Loading models from {path}")
@@ -39,12 +40,13 @@ def eval_models(path, tokenizer, explainers, test_set, device, ptg=0.05):
         infidelities = {}
         for model, eval in evaluators.items():
             infid = eval.evaluate_infidelity_mask_top_k(
-                test_set, k=1, ptg=ptg)
+                test_set, k=k, ptg=ptg)
             print(f"Infidelity of {exp} explanations of {model} model: {infid}")
             infidelities[model] = infid
 
         # Create bar chart
-        plt.bar(range(len(infidelities)), infidelities.values())
+        plt.clf()
+        plt.bar(range(len(infidelities)), infidelities.values(), color='pink', edgecolor='hotpink', alpha=0.7)
         plt.xticks(range(len(infidelities)), infidelities.keys())
         plt.xlabel('Model')
         plt.ylabel('Infidelity')
@@ -53,7 +55,7 @@ def eval_models(path, tokenizer, explainers, test_set, device, ptg=0.05):
         # Save bar chart
         model_id = os.path.relpath(path, start='./')
         save_path = f'results/figs/{model_id}/'
-        ext = f'{exp}_topk.png'
+        ext = f'{exp}_top_{k}.png'
 
         # Ensure unique filename
         file_path = save_path + ext
@@ -100,7 +102,7 @@ def load_latest_checkpoints(path):
                 print(f"Loaded model from {model_path}")
                 # Get name of model architecture
                 if not arch:
-                    arch = model.__class__.__name__
+                    arch = model.config.model_type
             except Exception as e:
                 print(f"Failed to load model from {model_path}: {e}")
 
@@ -108,12 +110,13 @@ def load_latest_checkpoints(path):
 
 
 if __name__ == '__main__':
-    top_path = './BERT_IMDB'
+    top_path = './roBERTa_IMDB'
     paths = [os.path.join(top_path, sub_path) for sub_path in os.listdir(top_path)]
-    tokenizer = AutoTokenizer.from_pretrained("distilbert/distilbert-base-uncased-finetuned-sst-2-english")
+    tokenizer = AutoTokenizer.from_pretrained("LiYuan/amazon-review-sentiment-analysis")
     explainers = [SHAP, IG]
     dataset = IMDB()
-    device = torch.device('cpu')
+    device = torch.device('cuda')
     
     for path in paths:
-        eval_models(path, tokenizer, explainers, dataset, device)
+        for k in [1, 5, 10]:
+            eval_models(path, tokenizer, explainers, dataset, device, k=k, ptg=0.01)
