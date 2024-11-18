@@ -8,7 +8,7 @@ Pruned model accuracy has NOT been evaluated, and pruned models are not fine-tun
 import matplotlib.pyplot as plt
 from pruners.pruning_methods import L1Unstructured, RandUnstructured
 import torch
-from evaluations.evaluator import Evaluator
+from evaluators.evaluation_methods import INFID
 from tqdm import tqdm
 from transformers import AutoTokenizer, BertForSequenceClassification
 from explainers.explanation_methods import SHAP, LIME, IG
@@ -66,11 +66,11 @@ def eval_suite(model, tokenizer, inputs, prune_ptg, explainers):
             l1unstructured_model, tokenizer, device)
         unpruned_explainer = explainer(unpruned_model, tokenizer, device)
 
-        evaluators_dict['randunstruct'][explainer.__name__] = Evaluator(
+        evaluators_dict['randunstruct'][explainer.__name__] = INFID(
             randunstruct_explainer)
-        evaluators_dict['l1unstruct'][explainer.__name__] = Evaluator(
+        evaluators_dict['l1unstruct'][explainer.__name__] = INFID(
             l1unstruct_explainer)
-        evaluators_dict['unpruned'][explainer.__name__] = Evaluator(
+        evaluators_dict['unpruned'][explainer.__name__] = INFID(
             unpruned_explainer)
 
     infidelities = {}
@@ -87,7 +87,7 @@ def eval_suite(model, tokenizer, inputs, prune_ptg, explainers):
 
                 # Append the result of get_local_infidelity to the list
                 infidelities[prune_method][expla_method].append(
-                    evaluator.get_local_infidelity_mask_top_k(input, k=1))
+                    evaluator.get_local_faithfulness(input, method='top_k', k=1))
 
     return infidelities
 

@@ -5,7 +5,7 @@ from tqdm import tqdm
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from explainers.explanation_methods import SHAP, LIME, IG
-from evaluations.evaluator import Evaluator
+from evaluators.evaluation_methods import INFID
 from data.datasets import IMDB, Emotion, YelpPolarity
 
 
@@ -32,15 +32,15 @@ def eval_models(path, tokenizer, explainers, test_set, device, ptg=0.05, k=1):
     for explainer in explainers:
         evaluators_dict[explainer.__name__] = {}
         for name, model in models.items():
-            evaluator = Evaluator(explainer(model, tokenizer, device))
+            evaluator = INFID(explainer(model, tokenizer, device))
             evaluators_dict[explainer.__name__][name] = evaluator
 
     for exp, evaluators in evaluators_dict.items():
         print(f'Evaluating infidelity of {exp} explanations...')
         infidelities = {}
         for model, eval in evaluators.items():
-            infid = eval.evaluate_infidelity_mask_top_k(
-                test_set, k=k, ptg=ptg)
+            infid = eval.evaluate_infidelity(
+                test_set, method='top_k', k=1, ptg=ptg)
             print(f"Infidelity of {exp} explanations of {model} model: {infid}")
             infidelities[model] = infid
 
