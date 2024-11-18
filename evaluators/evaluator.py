@@ -6,6 +6,8 @@
 
 from abc import ABC, abstractmethod
 import torch
+import heapq
+
 from explainers.explainer import Explainer
 
 
@@ -117,8 +119,8 @@ class FaithfulnessEvaluator(ABC):
         if self.method == 'SHAP':
             # `explanation` is a 2d array with elts:
             # [contribution to label 0, contribution to label 1]
-            top_feature_ids = sorted(
-                range(len(explanation)), key=lambda i: explanation[i][predicted_class_id], reverse=True)[:k]
+            top_feature_ids = heapq.nlargest(
+                k, range(len(explanation)), key=lambda i: explanation[i][predicted_class_id])
 
         elif self.method == 'LIME':
             # `explanation` is a list [(token, importance),...]
@@ -126,17 +128,17 @@ class FaithfulnessEvaluator(ABC):
             # positive feature importance -> feature contributes to label 1
             if predicted_class_id == 0:
                 # Get the indices of the k smallest importance values (contributing to label 0)
-                top_feature_ids = sorted(
-                    range(len(explanation)), key=lambda i: explanation[i][1])[:k]
+                top_feature_ids = heapq.nsmallest(
+                    k, range(len(explanation)), key=lambda i: explanation[i][1])
             else:
                 # Get the indices of the k largest importance values (contributing to label 1)
-                top_feature_ids = sorted(
-                    range(len(explanation)), key=lambda i: explanation[i][1], reverse=True)[:k]
+                top_feature_ids = heapq.nlargest(
+                    k, range(len(explanation)), key=lambda i: explanation[i][1])
 
         elif self.method == 'IG':
             # `explanation` is a list of feature importance scores w.r.t. model prediction
-            top_feature_ids = sorted(
-                range(len(explanation)), key=lambda i: explanation[i], reverse=True)[:k]
+            top_feature_ids = heapq.nlargest(
+                k, range(len(explanation)), key=lambda i: explanation[i])
 
         else:
             raise ValueError(f'Explanation method {self.method} not supported')

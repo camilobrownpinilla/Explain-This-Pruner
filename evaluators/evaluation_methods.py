@@ -11,6 +11,7 @@ from explainers.explanation_methods import SHAP, LIME, IG
 
 
 class INFID(FaithfulnessEvaluator):
+    """Implementation of Yeh et al.'s infidelity metric for faithfulness evaluation"""
     
     def __init__(self, explainer):
         super().__init__(explainer)
@@ -22,8 +23,11 @@ class INFID(FaithfulnessEvaluator):
         return self.get_local_infidelity(input, method, k, iters)
         
     def get_local_infidelity(self, input, method, k, iters=5):
-        tokenized_input = self.tokenizer(
-            input, return_tensors="pt").to(self.device)
+        max_length = self.model.config.max_position_embeddings
+        tokenized_input = self.tokenizer(input, 
+                                         return_tensors="pt", 
+                                         truncation=True,
+                                         max_length=max_length).to(self.device)
 
         with torch.no_grad():
             logits = self.model(**tokenized_input).logits
