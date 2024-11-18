@@ -56,6 +56,8 @@ class INFID(FaithfulnessEvaluator):
                 # mask the subset and evaluate infidelity
                 infid += self.eval_perturbation_infid(tokenized_input,
                                                 predicted_class_id, logits, explanation, subset)
+            infid /= iters
+            
         else:
             raise ValueError('supported perturbation methods: top_k, k_subset')
         
