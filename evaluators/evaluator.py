@@ -57,13 +57,13 @@ class FaithfulnessEvaluator(ABC):
         # shuffle test set for random sampling
         test_set = dataset.test()
         shuffled_set = test_set.shuffle(seed=4)  # set seed for reproducibility
-        infid = 0
+        faithfulness = 0
         num_samples = int(len(shuffled_set) * ptg)
-        print(f'evaluating infidelity on {num_samples} test samples')
+        print(f'evaluating faithfulness on {num_samples} test samples')
         for sample in shuffled_set[dataset.x][:num_samples]:
-            infid += self.get_local_faithfulness(sample, k, method)
+            faithfulness += self.get_local_faithfulness(sample, k, method)
 
-        return infid / num_samples
+        return faithfulness / num_samples
     
     def eval_perturbation(self, tokenized_input, predicted_class_id, explanation, feature_ids):
         """

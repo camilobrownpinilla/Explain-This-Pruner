@@ -3,11 +3,66 @@
 """
 
 import torch
+import numpy as np
 import random
 from transformers import AutoTokenizer, BertForSequenceClassification
 
 from evaluators.evaluator import FaithfulnessEvaluator
 from explainers.explanation_methods import SHAP, LIME, IG
+
+
+class FCOR(FaithfulnessEvaluator):
+    """Implementation of ..."""
+    
+    def __init__(self, explainer):
+        super().__init__(explainer)
+        
+    def evaluate_fcor(self, dataset, method, k, ptg=0.2):
+        return self.evaluate_faithfulness(dataset, method, k, ptg)
+    
+    def get_local_faithfulness(self, input, method, k, iters):
+        return super().get_local_fcor(input, method, k, iters)
+    
+    def get_local_fcor(self, input, method, k, iters):
+        max_length = self.model.config.max_position_embeddings
+        tokenized_input = self.tokenizer(input, 
+                                         return_tensors="pt", 
+                                         truncation=True,
+                                         max_length=max_length).to(self.device)
+
+        with torch.no_grad():
+            logits = self.model(**tokenized_input).logits
+
+        predicted_class_id = logits.argmax().item()
+        explanation = self.explainer.explain(input)
+        
+        if k < 1 or k > len(explanation):
+            raise ValueError(
+                'k must be at least 1 and no greater than the number of features')
+        
+        importance_sums = []
+        logits_delta = []
+        if method == 'k_subset':
+            # perturb input by masking a random subset of k features
+            ids = range(len(explanation))
+            for _ in range(iters):
+                # randomly sample k feature ids for perturbation
+                subset = random.sample(ids, k)
+                
+                importance_sum, perturbed_logits = self.eval_perturbation(
+                    tokenized_input, predicted_class_id, explanation, subset
+                )
+                importance_sums.append(importance_sum)
+                logits_delta.append(logits[0, predicted_class_id] -
+                                    perturbed_logits[0, predicted_class_id])
+                
+            # get correlation between sum of masked feature importances and change in model output
+            fcor = np.corrcoef(importance_sums, logits_delta)[0, 1]
+            
+        else:
+            raise ValueError('supported perturbation methods: k_subset')
+        
+        return fcor
 
 
 class INFID(FaithfulnessEvaluator):
