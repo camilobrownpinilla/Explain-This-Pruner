@@ -5,14 +5,14 @@ from tqdm import tqdm
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from explainers.explanation_methods import SHAP, LIME, IG
-from evaluators.evaluation_methods import INFID
+from evaluators.evaluation_methods import INFID, FCOR
 from data.datasets import IMDB, Emotion, YelpPolarity
 
 
-def eval_models(path, tokenizer, explainers, test_set, device, ptg=0.05, k=1):
+def eval_models(path, tokenizer, explainers, test_set, metric, device, ptg=0.05, k=1):
     """
-    For each model in `path`, evaluates infidelity of each explainer on `test_set`.
-    For each explainer, creates and saves a bar chart of infidelity scores for each model.
+    For each model in `path`, evaluates faithfulness of each explainer on `test_set`.
+    For each explainer, creates and saves a bar chart of faithfulness scores for each model.
 
     params:
         path: path to directory of models, e.g. './ckpts'
@@ -21,36 +21,45 @@ def eval_models(path, tokenizer, explainers, test_set, device, ptg=0.05, k=1):
         test_set: test set to evaluate explainability on
         device: device to evaluate models on
         ptg: percentage of test_set to evaluate on, default 5%
-        k: Number of features to mask when computing infidelity 
+        k: Number of features to mask when computing faithfulness 
     """
     # Load in models contained in `path`
     print(f"Loading models from {path}")
     models, arch = load_latest_checkpoints(path)
+    
+    if metric == 'infid':
+        eval_metric = INFID
+        metric_name = 'Infidelity'
+    elif metric == 'fcor':
+        eval_metric = FCOR
+        metric_name = 'FCor'
+    else:
+        raise ValueError("metric must be 'infid' or 'fcor'")
 
     print(f"Creating evaluators for explanations of {arch} models...")
     evaluators_dict = {}
     for explainer in explainers:
         evaluators_dict[explainer.__name__] = {}
         for name, model in models.items():
-            evaluator = INFID(explainer(model, tokenizer, device))
+            evaluator = eval_metric(explainer(model, tokenizer, device))
             evaluators_dict[explainer.__name__][name] = evaluator
 
     for exp, evaluators in evaluators_dict.items():
-        print(f'Evaluating infidelity of {exp} explanations...')
-        infidelities = {}
+        print(f'Evaluating {metric_name} of {exp} explanations...')
+        faithfulness = {}
         for model, eval in evaluators.items():
-            infid = eval.evaluate_infidelity(
+            f = eval.evaluate_faithfulness(
                 test_set, method='top_k', k=1, ptg=ptg)
-            print(f"Infidelity of {exp} explanations of {model} model: {infid}")
-            infidelities[model] = infid
+            print(f"{metric_name} of {exp} explanations of {model} model: {f}")
+            faithfulness[model] = f
 
         # Create bar chart
         plt.clf()
-        plt.bar(range(len(infidelities)), infidelities.values(), color='pink', edgecolor='hotpink', alpha=0.7)
-        plt.xticks(range(len(infidelities)), infidelities.keys())
+        plt.bar(range(len(faithfulness)), faithfulness.values(), color='pink', edgecolor='hotpink', alpha=0.7)
+        plt.xticks(range(len(faithfulness)), faithfulness.keys())
         plt.xlabel('Model')
-        plt.ylabel('Infidelity')
-        plt.title(f'Infidelity of {exp} Explanations for Differently Pruned Versions of {arch}')
+        plt.ylabel(metric_name)
+        plt.title(f'{metric_name} of {exp} Explanations for Differently Pruned Versions of {arch}')
         
         # Save bar chart
         model_id = os.path.relpath(path, start='./')
@@ -116,7 +125,8 @@ if __name__ == '__main__':
     explainers = [SHAP, IG]
     dataset = IMDB()
     device = torch.device('cuda')
+    metric = 'fcor'
     
     for path in paths:
         for k in [1, 5, 10]:
-            eval_models(path, tokenizer, explainers, dataset, device, k=k, ptg=0.01)
+            eval_models(path, tokenizer, explainers, dataset, metric, device, k=k, ptg=0.01)

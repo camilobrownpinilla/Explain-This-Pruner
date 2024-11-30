@@ -21,7 +21,7 @@ class FCOR(FaithfulnessEvaluator):
         return self.evaluate_faithfulness(dataset, method, k, ptg)
     
     def get_local_faithfulness(self, input, method, k, iters):
-        return super().get_local_fcor(input, method, k, iters)
+        return self.get_local_fcor(input, method, k, iters)
     
     def get_local_fcor(self, input, method, k, iters):
         max_length = self.model.config.max_position_embeddings
