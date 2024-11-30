@@ -129,4 +129,4 @@ if __name__ == '__main__':
     
     for path in paths:
         for k in [1, 2, 3, 5]:
-            eval_models(path, tokenizer, explainers, dataset, metric, device, k=k, ptg=0.01)
+            eval_models(path, tokenizer, explainers, dataset, metric, device, k=k, ptg=0.10)
