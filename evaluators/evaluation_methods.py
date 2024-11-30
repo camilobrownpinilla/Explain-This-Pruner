@@ -20,10 +20,10 @@ class FCOR(FaithfulnessEvaluator):
     def evaluate_fcor(self, dataset, method, k, ptg=0.2):
         return self.evaluate_faithfulness(dataset, method, k, ptg)
     
-    def get_local_faithfulness(self, input, method, k, iters):
+    def get_local_faithfulness(self, input, method, k, iters=10):
         return self.get_local_fcor(input, method, k, iters)
     
-    def get_local_fcor(self, input, method, k, iters):
+    def get_local_fcor(self, input, method, k, iters=10):
         max_length = self.model.config.max_position_embeddings
         tokenized_input = self.tokenizer(input, 
                                          return_tensors="pt", 
@@ -35,6 +35,24 @@ class FCOR(FaithfulnessEvaluator):
 
         predicted_class_id = logits.argmax().item()
         explanation = self.explainer.explain(input)
+        
+        # Print the decoded tokens in order of importance to predicted class
+        
+        # importances = explanation #[:, predicted_class_id]
+        # token_ids = tokenized_input['input_ids']
+        # # Flatten the tensor to get a list of token IDs
+        # token_ids_list = token_ids.squeeze().tolist()
+
+        # # Pair token IDs with their importances
+        # token_importance_pairs = list(zip(token_ids_list, importances))
+
+        # # Sort by importance in descending order
+        # sorted_pairs = sorted(token_importance_pairs, key=lambda x: x[1], reverse=True)
+
+        # # Decode and print tokens in order of importance
+        # for token_id, importance in sorted_pairs:
+        #     token = tokenizer.decode([token_id])
+        #     print(f"{token}: {importance}")
         
         if k < 1 or k > len(explanation):
             raise ValueError(
@@ -52,10 +70,10 @@ class FCOR(FaithfulnessEvaluator):
                 importance_sum, perturbed_logits = self.eval_perturbation(
                     tokenized_input, predicted_class_id, explanation, subset
                 )
+                delta = logits[0, predicted_class_id] - perturbed_logits[0, predicted_class_id]
                 importance_sums.append(importance_sum)
-                logits_delta.append(logits[0, predicted_class_id] -
-                                    perturbed_logits[0, predicted_class_id])
-                
+                logits_delta.append(delta)
+            
             # get correlation between sum of masked feature importances and change in model output
             fcor = np.corrcoef(importance_sums, logits_delta)[0, 1]
             
@@ -153,10 +171,13 @@ if __name__ == '__main__':
     device = torch.device('cpu')
     model = model.to(device)
 
-    input1 = 'Hello, my dog is so terribly ugly'
-    input2 = 'I am very happy about this restaurant.'
-
     explainer = IG(model, tokenizer, device)
-    evaluator = INFID(explainer)
-    infidelity = evaluator.get_local_infidelity_mask_top_k(input2, 3)
-    print(infidelity)
+    evaluator = FCOR(explainer)
+    
+    inputs = ['Hello, my dog is so terribly ugly',
+              'I am very happy about this restaurant.',
+              'This food is absolutely delicious.',
+              'This food is so disgusting and nasty, but healthy.']
+
+    for input in inputs[-1:]:
+        print(evaluator.get_local_fcor(input, 'k_subset', 1, iters=3))
