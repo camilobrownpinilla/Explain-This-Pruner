@@ -52,7 +52,7 @@ def eval_models(path, tokenizer, explainers, test_set, metric, device, ptg=0.05,
         faithfulness = {}
         for model, eval in evaluators.items():
             f = eval.evaluate_faithfulness(
-                test_set, 'k_subset', k, ptg=ptg)
+                test_set, method='k_subset', k=k, ptg=ptg)
             print(f"{metric_name} of {exp} explanations of {model} model: {f}")
             faithfulness[model] = f
 
@@ -148,5 +148,5 @@ if __name__ == '__main__':
     metric = 'fcor'
     
     for path in paths:
-        for k in [1, 2, 5]:
-            eval_models(path, tokenizer, explainers, dataset, metric, device, k=k, ptg=0.01)
+        for k in [1, 2, 3, 5]:
+            eval_models(path, tokenizer, explainers, dataset, metric, device, k=k, ptg=0.10)
