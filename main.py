@@ -1,6 +1,9 @@
 import os
 import torch
 import matplotlib.pyplot as plt
+from matplotlib import colormaps as cm
+from matplotlib.colors import Normalize
+import json
 from tqdm import tqdm
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -25,7 +28,7 @@ def eval_models(path, tokenizer, explainers, test_set, metric, device, ptg=0.05,
     """
     # Load in models contained in `path`
     print(f"Loading models from {path}")
-    models, arch = load_latest_checkpoints(path)
+    models, arch, accuracies = load_latest_checkpoints(path)
     
     if metric == 'infid':
         eval_metric = INFID
@@ -49,21 +52,32 @@ def eval_models(path, tokenizer, explainers, test_set, metric, device, ptg=0.05,
         faithfulness = {}
         for model, eval in evaluators.items():
             f = eval.evaluate_faithfulness(
-                test_set, method='top_k', k=1, ptg=ptg)
+                test_set, 'k_subset', k, ptg=ptg)
             print(f"{metric_name} of {exp} explanations of {model} model: {f}")
             faithfulness[model] = f
 
+        # Normalize accuracies
+        norm = Normalize(vmin=min(accuracies.values()), vmax=max(accuracies.values()))
+        cmap = cm.get_cmap('cool_warm')
+        colors = [cmap(norm(acc)) for acc in accuracies.values]
+
         # Create bar chart
         plt.clf()
-        plt.bar(range(len(faithfulness)), faithfulness.values(), color='pink', edgecolor='hotpink', alpha=0.7)
-        plt.xticks(range(len(faithfulness)), faithfulness.keys())
+        plt.bar(range(len(faithfulness)), faithfulness.values(), color=colors, edgecolor='grey', alpha=0.7)
+        plt.xticks(range(len(faithfulness)), faithfulness.keys(), rotation=45, ha='right')
         plt.xlabel('Model')
         plt.ylabel(metric_name)
         plt.title(f'{metric_name} of {exp} Explanations for Differently Pruned Versions of {arch}')
+
+        # Add colorbar
+        sm = cm.ScalarMappable(cmap=cmap, norm=norm)
+        sm.set_array([])
+        cbar = plt.colorbar(sm)
+        cbar.set_label('Accuracy')
         
         # Save bar chart
         model_id = os.path.relpath(path, start='./')
-        save_path = f'results/figs/{model_id}/'
+        save_path = f'results/{metric}/{model_id}/'
         ext = f'{exp}_top_{k}.png'
 
         # Ensure unique filename
@@ -92,6 +106,7 @@ def load_latest_checkpoints(path):
         arch : architecture of models in `path`, e.g. BertForSequenceClassification
     """
     models = {}
+    accuracies = {}
     arch = None
     
     # Check if the path exists and is a directory
@@ -112,10 +127,15 @@ def load_latest_checkpoints(path):
                 # Get name of model architecture
                 if not arch:
                     arch = model.config.model_type
+
+                # Get model accuracy
+                with open(os.path.join(model_path, 'all_results.json'), 'r') as f:
+                    data = json.load(f)
+                    accuracies[model] = data['eval_accuracy']
             except Exception as e:
                 print(f"Failed to load model from {model_path}: {e}")
 
-    return models, arch
+    return models, arch, accuracies
 
 
 if __name__ == '__main__':
@@ -124,9 +144,9 @@ if __name__ == '__main__':
     tokenizer = AutoTokenizer.from_pretrained("LiYuan/amazon-review-sentiment-analysis")
     explainers = [SHAP, IG]
     dataset = IMDB()
-    device = torch.device('cuda')
+    device = torch.device('cpu')
     metric = 'fcor'
     
     for path in paths:
-        for k in [1, 5, 10]:
+        for k in [1, 2, 5]:
             eval_models(path, tokenizer, explainers, dataset, metric, device, k=k, ptg=0.01)
