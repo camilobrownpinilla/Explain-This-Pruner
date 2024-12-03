@@ -52,18 +52,22 @@ class FaithfulnessEvaluator(ABC):
             ptg: percentage of test set to evaluate on. default 20%
 
         returns:
-            average faithfulness score
+            faithfulness: average faithfulness score
+            faithfulness_distribution: list of faithfulness scores
         """
         # shuffle test set for random sampling
         test_set = dataset.test()
         shuffled_set = test_set.shuffle(seed=4)  # set seed for reproducibility
         faithfulness = 0
+        faithfulness_distribution = []
         num_samples = int(len(shuffled_set) * ptg)
         print(f'evaluating faithfulness on {num_samples} test samples')
         for sample in shuffled_set[dataset.x][:num_samples]:
-            faithfulness += self.get_local_faithfulness(sample, k, method)
+            local_faithfulness = self.get_local_faithfulness(sample, method, k)
+            faithfulness += local_faithfulness
+            faithfulness_distribution.append(local_faithfulness)
 
-        return faithfulness / num_samples
+        return faithfulness / num_samples, faithfulness_distribution
     
     def eval_perturbation(self, tokenized_input, predicted_class_id, explanation, feature_ids):
         """

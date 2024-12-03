@@ -20,10 +20,10 @@ class FCOR(FaithfulnessEvaluator):
     def evaluate_fcor(self, dataset, method, k, ptg=0.2):
         return self.evaluate_faithfulness(dataset, method, k, ptg)
     
-    def get_local_faithfulness(self, input, method, k, iters=10):
+    def get_local_faithfulness(self, input, method, k, iters=100):
         return self.get_local_fcor(input, method, k, iters)
     
-    def get_local_fcor(self, input, method, k, iters=10):
+    def get_local_fcor(self, input, method, k, iters=100):
         max_length = self.model.config.max_position_embeddings
         tokenized_input = self.tokenizer(input, 
                                          return_tensors="pt", 
@@ -75,7 +75,7 @@ class FCOR(FaithfulnessEvaluator):
                 logits_delta.append(delta)
             
             # get correlation between sum of masked feature importances and change in model output
-            fcor = np.corrcoef(importance_sums, logits_delta)[0, 1]
+            fcor = np.corrcoef(torch.Tensor(importance_sums).cpu(), torch.Tensor(logits_delta).cpu())[0, 1]
             
         else:
             raise ValueError('supported perturbation methods: k_subset')
