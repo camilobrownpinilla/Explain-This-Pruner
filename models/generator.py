@@ -44,7 +44,7 @@ def generate(model, tokenizer, dataset, pruning_methods, prune_ptg,
                                    save_strategy='no',
                                    per_device_train_batch_size=64,
                                    per_device_eval_batch_size=64,
-                                   num_train_epochs=train_epochs,
+                                   num_train_epochs=1,
                                    fp16=True)
     base_trainer = Trainer(base_model, 
                            train_args,
