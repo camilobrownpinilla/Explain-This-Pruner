@@ -77,7 +77,7 @@ class IG(Explainer):
 
     def explain(self, input):
         input = self.tokenizer(input, return_tensors='pt',
-                               padding=True, truncation=True)
+                               padding=True, truncation=True).to(self.device)
         pred_label_idx = torch.argmax(
             self.model(**input).logits, dim=-1).item()
         ig, _ = self.integrated_gradients(
@@ -99,7 +99,7 @@ class IG(Explainer):
         target_class.backward()
 
         # Average over embedding dimension to compute gradient for input token
-        gradients = np.average(embeddings.grad, axis=-1)
+        gradients = torch.mean(embeddings.grad, axis=-1)
         predictions = torch.softmax(logits, dim=-1)
 
         return predictions, gradients
@@ -192,7 +192,7 @@ class IG(Explainer):
         # "Computing Linear Restrictions of Neural Networks", Matthew Sotoudeh, Aditya V. Thakur
         # https://arxiv.org/abs/1908.06214
         grads = (grads[:-1] + grads[1:]) / 2.0
-        avg_grads = np.average(grads, axis=0)
+        avg_grads = torch.mean(grads, axis=0)
         integrated_gradients = (
             # shape: <inp.shape>
             inp['input_ids']-baseline['input_ids'])*avg_grads
