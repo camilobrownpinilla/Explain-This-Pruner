@@ -7,6 +7,7 @@ from matplotlib.cm import ScalarMappable
 import json
 from tqdm import tqdm
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
+import cmasher as cmr
 
 from explainers.explanation_methods import SHAP, LIME, IG
 from evaluators.evaluation_methods import INFID, FCOR
@@ -51,15 +52,17 @@ def eval_models(path, tokenizer, explainers, test_set, metric, device, ptg=0.05,
     for exp, evaluators in evaluators_dict.items():
         print(f'Evaluating {metric_name} of {exp} explanations...')
         faithfulness = {}
+        distributions = {}
         for model, eval in evaluators.items():
-            f = eval.evaluate_faithfulness(
+            f, d = eval.evaluate_faithfulness(
                 test_set, method='k_subset', k=k, ptg=ptg)
             print(f"{metric_name} of {exp} explanations of {model} model: {f}")
             faithfulness[model] = f
+            distributions[model] = d
 
        # Normalize accuracies
         norm = Normalize(vmin=min(accuracies.values()), vmax=max(accuracies.values()))
-        cmap = cm.get_cmap('plasma')
+        cmap = cm['cmr.bubblegum']
         colors = [cmap(norm(acc)) for acc in accuracies.values()]
 
         # Create figure and axes with space for colorbar
@@ -68,12 +71,12 @@ def eval_models(path, tokenizer, explainers, test_set, metric, device, ptg=0.05,
 
         # Create bar chart
         bars = ax.bar(range(len(faithfulness)), faithfulness.values(), 
-                    color=colors, edgecolor='grey', alpha=0.7)
+                    color=colors, edgecolor='grey')
         ax.set_xticks(range(len(faithfulness)))
         ax.set_xticklabels(faithfulness.keys(), rotation=45, ha='right')
         ax.set_xlabel('Model')
         ax.set_ylabel(metric_name)
-        ax.set_title(f'{metric_name} of {exp} Explanations for Differently Pruned Versions of {arch}')
+        ax.set_title(f'{metric_name} on {exp} Explanations for Differently Pruned Versions of {arch}')
 
         # Add colorbar
         sm = ScalarMappable(cmap=cmap, norm=norm)
@@ -86,7 +89,7 @@ def eval_models(path, tokenizer, explainers, test_set, metric, device, ptg=0.05,
         
         # Save bar chart
         model_id = os.path.relpath(path, start='./')
-        save_path = f'results/{ptg=}/10_iters/{metric}/{test_set.__class__.__name__}/{model_id}/top_{k}/'
+        save_path = f'results/{ptg=}/{metric}/{model_id}/top_{k}/'
         ext = f'{exp}.png'
         file_path = save_path + ext
         os.makedirs(save_path, exist_ok=True)
@@ -94,6 +97,46 @@ def eval_models(path, tokenizer, explainers, test_set, metric, device, ptg=0.05,
         print(f"Chart saved to {file_path}")
         plt.close()
 
+        # Plot faithfulness distributions
+        plt.clf()
+        plt.style.use('default')  # Use matplotlib default style
+        
+        fig, ax = plt.subplots(figsize=(12, 6))
+        
+        # Create violin plot
+        positions = range(1, len(distributions) + 1)
+        violin_parts = ax.violinplot(list(distributions.values()), positions, 
+                                   showmeans=True, showmedians=False)
+        violin_parts['cbars'].set_color('white'), violin_parts['cmins'].set_color('white')
+        violin_parts['cmaxes'].set_color('white')        
+        # Color violins based on accuracy
+        for i, pc in enumerate(violin_parts['bodies']):
+            pc.set_facecolor(colors[i])
+            pc.set_edgecolor('grey')
+            pc.set_alpha(1)
+        
+        # Color mean points
+        violin_parts['cmeans'].set_color('white')
+        
+        # Customize plot
+        ax.set_xticks(positions)
+        ax.set_xticklabels(list(distributions.keys()), rotation=45, ha='right')
+        ax.set_xlabel('Model')
+        ax.set_ylabel(f'{metric_name} scores')
+        ax.set_title(f'Distributions of {metric_name} on {exp} Explanations\nfor Differently Pruned Versions of {arch}')
+        
+        # Add colorbar
+        sm = ScalarMappable(cmap=cmap, norm=norm)
+        sm.set_array([])
+        cbar = fig.colorbar(sm, ax=ax)
+        cbar.set_label('Accuracy')
+        
+        # Adjust layout
+        plt.tight_layout()
+        file_path = save_path + f'{exp}_distribution.png'
+        plt.savefig(file_path, format='png', dpi=300)
+        plt.close()
+        print(f'Distribution plot saved to {file_path}')
 
 def load_latest_checkpoints(path):
     """
@@ -144,17 +187,16 @@ def load_latest_checkpoints(path):
 
 
 if __name__ == '__main__':
-    top_path = './generated_models/roBERTa_IMDB'
+    top_path = './generated_models/roBERTa_YELP_3EP'
     paths = [os.path.join(top_path, sub_path) for sub_path in os.listdir(top_path)]
     tokenizer = AutoTokenizer.from_pretrained("LiYuan/amazon-review-sentiment-analysis")
     # tokenizer = AutoTokenizer.from_pretrained(
     # "distilbert/distilbert-base-uncased-finetuned-sst-2-english")
     explainers = [SHAP, IG]
-    dataset = IMDB()
+    dataset = YelpPolarity()
     device = torch.device('cuda')
     metric = 'fcor'
     
     for path in paths:
-        for k in [5, 1, 3]:
-        # for k in [1, 2, 3, 5]:
-            eval_models(path, tokenizer, explainers, dataset, metric, device, k=k, ptg=0.01)
+        for k in [3]:
+            eval_models(path, tokenizer, explainers, dataset, metric, device, k=k, ptg=0.03)
