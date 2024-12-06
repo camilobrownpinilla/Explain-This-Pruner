@@ -21,10 +21,12 @@ class SHAP(Explainer):
             device = get_device()
         super().__init__(model, tokenizer, device)
         self.explainer = pipeline('text-classification',
-                                  model=self.model,
+                                  model=model,
                                   device=device,
                                   tokenizer=self.tokenizer,
-                                  top_k=None)
+                                  top_k=None,
+                                  max_length=model.config.max_position_embeddings,
+                                  truncation=True)
         self.max_length = self.model.config.max_position_embeddings
 
     def explain(self, input):

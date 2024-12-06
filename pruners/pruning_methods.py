@@ -43,8 +43,10 @@ class CustomMask(Pruner):
 
 
 class L1Structured(Pruner):
+    def __init__(self):
+        self.method = prune.l1_unstructured
 
-    def prune(params, ptg):
+    def prune(self, params, ptg):
         for module, name in params:
             prune.l1_unstructured(module, name, ptg)
         super().remove(params)

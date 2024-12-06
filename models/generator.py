@@ -1,4 +1,3 @@
-from datasets import load_dataset
 from transformers import Trainer, DataCollatorWithPadding, TrainingArguments, AutoModelForSequenceClassification, AutoTokenizer
 import evaluate
 import numpy as np
@@ -26,6 +25,7 @@ def generate(model, tokenizer, dataset, pruning_methods, prune_ptg,
     """
     HOT_PINK = "\033[1;4;38;5;197m" 
     RESET = "\033[0m"
+    BATCH_SIZE = 128
     os.environ["TOKENIZERS_PARALLELISM"] = "false" # Avoid forking
 
     # Prepare data
@@ -42,9 +42,9 @@ def generate(model, tokenizer, dataset, pruning_methods, prune_ptg,
                                    eval_strategy='epoch', 
                                    logging_strategy='epoch',
                                    save_strategy='no',
-                                   per_device_train_batch_size=64,
-                                   per_device_eval_batch_size=64,
-                                   num_train_epochs=1,
+                                   per_device_train_batch_size=BATCH_SIZE,
+                                   per_device_eval_batch_size=BATCH_SIZE,
+                                   num_train_epochs=train_epochs,
                                    fp16=True)
     base_trainer = Trainer(base_model, 
                            train_args,
@@ -72,8 +72,8 @@ def generate(model, tokenizer, dataset, pruning_methods, prune_ptg,
                                    eval_strategy='epoch',
                                    save_strategy='no',
                                    logging_strategy='epoch',
-                                   per_device_train_batch_size=64,
-                                   per_device_eval_batch_size=64,
+                                   per_device_train_batch_size=BATCH_SIZE,
+                                   per_device_eval_batch_size=BATCH_SIZE,
                                    num_train_epochs=train_epochs,
                                    fp16=True)
     smaller_trainer = Trainer(smaller_model, 
@@ -102,9 +102,9 @@ def generate(model, tokenizer, dataset, pruning_methods, prune_ptg,
                                        eval_strategy='epoch',
                                        save_strategy='no',
                                        logging_strategy='epoch',
-                                       per_device_train_batch_size=64,
-                                       per_device_eval_batch_size=64,
-                                       num_train_epochs=train_epochs,
+                                       per_device_train_batch_size=BATCH_SIZE,
+                                       per_device_eval_batch_size=BATCH_SIZE,
+                                       num_train_epochs=1,
                                        fp16=True)
         prune_trainer = Trainer(pruned_model, 
                                 train_args,
