@@ -65,12 +65,15 @@ def eval_models(path, tokenizer, explainers, test_set, metric, device, ptg=0.05,
         # Create figure and axes with space for colorbar
         plt.clf()
         fig, ax = plt.subplots(figsize=(10, 6))
-
+        
+        models = ['base', 'RandUnstructured', 'L1Unstructured', 'L1Structured', 'smaller']
+        fcors = [faithfulness[model] for model in models]
+            
         # Create bar chart
-        bars = ax.bar(range(len(faithfulness)), faithfulness.values(), 
+        bars = ax.bar(range(len(models)), fcors, 
                     color=colors, edgecolor='grey', alpha=0.7)
-        ax.set_xticks(range(len(faithfulness)))
-        ax.set_xticklabels(faithfulness.keys(), rotation=45, ha='right')
+        ax.set_xticks(range(len(models)))
+        ax.set_xticklabels(models, rotation=45, ha='right')
         ax.set_xlabel('Model')
         ax.set_ylabel(metric_name)
         ax.set_title(f'{metric_name} of {exp} Explanations for Differently Pruned Versions of {arch}')
