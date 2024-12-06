@@ -86,7 +86,7 @@ def eval_models(path, tokenizer, explainers, test_set, metric, device, ptg=0.05,
         
         # Save bar chart
         model_id = os.path.relpath(path, start='./')
-        save_path = f'results/{ptg=}/10_iters/{metric}/{test_set.__class__.__name__}/{model_id}/top_{k}/'
+        save_path = f'results/{ptg=}/10_iters/{metric}/{test_set.__class__.__name__}/{model_id}/{k}_subset/'
         ext = f'{exp}.png'
         file_path = save_path + ext
         os.makedirs(save_path, exist_ok=True)
