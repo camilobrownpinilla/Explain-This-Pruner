@@ -1,3 +1,5 @@
+.DS_Store
+raw_data/
 .python-version
 leaf/
 __pycache__
