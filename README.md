@@ -2,7 +2,7 @@
 
 This repository contains the codebase for the paper "Explain This, Pruner! The Effect of Zero-Order Pruning on LLM Explainability and Curvature," our CS2822r Final Project.
 
-Read the paper in [The Harvard Undergraduate Research Journal, Spring 2025](https://www.thurj.org/_files/ugd/13dbc7_a8993dad72a544b2a6d398598886aea0.pdf).
+Read the paper in [The Harvard Undergraduate Research Journal, Spring 2025](https://www.thurj.org/spring-2025-research/jbejjanietal).
 
 ## Abstract:
 
