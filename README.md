@@ -2,6 +2,8 @@
 
 This repository contains the codebase for the paper "Explain This, Pruner! The Effect of Zero-Order Pruning on LLM Explainability and Curvature," our CS2822r Final Project.
 
+Read the paper in [The Harvard Undergraduate Research Journal, Spring 2025](https://www.thurj.org/_files/ugd/13dbc7_a8993dad72a544b2a6d398598886aea0.pdf).
+
 ## Abstract:
 
 Large Language Models (LLMs) excel in language understanding and generation tasks but have significant memory and compute requirements. In addition, the size and complexity of LLMs pose challenges in XAI, an emerging field in ML concerned with the problem of explaining how a model arrives at its outputs. Model compression techniques such as pruning can be effective in reducing resource requirements and enabling more efficient inference in downstream tasks. However, it is not well understood if and how pruning of LLMs affects their explainability. Our work investigates this open problem. We identify faithfulness of explanations as a necessary metric in determining a model's explainability. We then evaluate the faithfulness of SHapley Additive exPlanations (SHAP) and Integrated Gradients (IG) explanations of variously pruned and non-pruned DistilBERT and RoBERTa models trained on the IMDb and Yelp Polarity datasets for binary sentiment classification.
